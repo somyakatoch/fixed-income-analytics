@@ -1,14 +1,16 @@
 import streamlit as st
 import pandas as pd
 
-from utils.fred_loader import (
+from fred_loader import (
     get_fred_client,
     fetch_country_data,
     build_current_previous_curve,
     SERIES_CODES
 )
-from utils.plotting import plot_yield_curve
-from utils.calculations import (
+
+from plotting import plot_yield_curve
+
+from calculations import (
     calculate_spread,
     classify_curve,
     macro_interpretation
@@ -38,19 +40,17 @@ months_back = st.sidebar.slider(
     value=1
 )
 
-st.sidebar.markdown("---")
+# FRED API key
+try:
+    api_key = st.secrets["FRED_API_KEY"]
+except Exception:
+    api_key = ""
 
-api_key = st.secrets.get("FRED_API_KEY", "")
-
-if not api_key or api_key == "PASTE_YOUR_FRED_API_KEY_HERE":
+if not api_key:
     api_key = st.sidebar.text_input(
         "Enter FRED API Key",
         type="password"
     )
-
-st.sidebar.info(
-    "For deployment, save your FRED key in Streamlit Secrets as FRED_API_KEY."
-)
 
 if not api_key:
     st.warning("Please enter your FRED API key in the sidebar.")
@@ -61,6 +61,7 @@ try:
 
     with st.spinner("Fetching real FRED data..."):
         country_data = fetch_country_data(fred, country)
+
         curve_data = build_current_previous_curve(
             country_data,
             months_back=months_back
@@ -96,16 +97,16 @@ try:
 
     st.subheader("Real Data Table")
 
+    current_col = f"Current ({curve_data['latest_date'].date()})"
+    previous_col = f"Previous ({curve_data['previous_date'].date()})"
+
     table = pd.DataFrame({
         "Maturity": curve_data["maturities"],
-        f"Current ({curve_data['latest_date'].date()})": curve_data["current_curve"],
-        f"Previous ({curve_data['previous_date'].date()})": curve_data["previous_curve"]
+        current_col: curve_data["current_curve"],
+        previous_col: curve_data["previous_curve"]
     })
 
-    table["Change"] = (
-        table[f"Current ({curve_data['latest_date'].date()})"]
-        - table[f"Previous ({curve_data['previous_date'].date()})"]
-    )
+    table["Change"] = table[current_col] - table[previous_col]
 
     st.dataframe(table, use_container_width=True)
 
@@ -113,7 +114,8 @@ try:
     st.write(macro_interpretation(current_spread))
 
     st.markdown("---")
-    st.subheader("Series Used")
+
+    st.subheader("FRED Series Used")
 
     series_table = pd.DataFrame([
         {
