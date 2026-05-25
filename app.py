@@ -93,8 +93,7 @@ try:
     st.subheader(f"{country}: Current vs Previous Yield Curve")
 
     fig = plot_yield_curve(country, curve_data)
-    st.pyplot(fig)
-
+    st.pyplot(fig, use_container_width=False)
     st.subheader("Real Data Table")
 
     current_col = f"Current ({curve_data['latest_date'].date()})"
