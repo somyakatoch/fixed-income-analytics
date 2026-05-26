@@ -1,4 +1,5 @@
-import streamlit as stimport pandas as pd
+import streamlit as st
+import pandas as pd
 
 from fred_loader import (get_fred_client,fetch_country_data,build_current_previous_curve,SERIES_CODES)
 
